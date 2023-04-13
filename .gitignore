@@ -50,3 +50,6 @@ out/
 
 # Visual Studio CMake settings file
 CMakeSettings.json
+
+zig-cache
+zig-out
