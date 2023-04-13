@@ -29,6 +29,11 @@ const HostApi = enum {
     }
 };
 
+fn unsupportedOs(os: std.Target.Os.Tag) noreturn {
+    std.log.err("unsupported OS: {s}", .{@tagName(os)});
+    std.os.exit(1);
+}
+
 fn unsupportedHostApi(os: std.Target.Os.Tag, api: HostApi) noreturn {
     std.log.err("host API {s} is unsupported on {s}", .{ @tagName(api), @tagName(os) });
     std.os.exit(1);
@@ -53,17 +58,33 @@ pub fn build(b: *std.Build) void {
     lib.addCSourceFiles(src_common, &.{});
     lib.linkLibC();
 
+    const t = lib.target_info.target;
+
     // TODO: std.Build cannot parse list of enums yet
     // TODO: prevent duplicates
-    const host_apis = b.option([]const []const u8, "host-api", "Enable specific host audio APIs") orelse &[_][]const u8{};
+    const host_apis = blk: {
+        const opt_strs = b.option([]const []const u8, "host-api", "Enable specific host audio APIs");
+        if (opt_strs) |strs| {
+            const opts = b.allocator.alloc(HostApi, strs.len) catch @panic("OOM");
+            for (strs, opts) |s, *opt| {
+                opt.* = HostApi.fromString(s);
+            }
+            break :blk opts;
+        } else {
+            break :blk switch (t.os.tag) {
+                .macos => &HostApi.defaults_macos,
+                .linux => &HostApi.defaults_linux,
+                .windows => &HostApi.defaults_windows,
+                else => unsupportedOs(t.os.tag),
+            };
+        }
+    };
 
-    const t = lib.target_info.target;
     switch (t.os.tag) {
         .macos => {
             lib.addIncludePath("src/os/unix");
             lib.addCSourceFiles(src_os_unix, &.{});
-            for (host_apis) |s| {
-                const api = HostApi.fromString(s);
+            for (host_apis) |api| {
                 switch (api) {
                     .coreaudio => {
                         lib.addIncludePath("src/hostapi/coreaudio");
@@ -80,8 +101,7 @@ pub fn build(b: *std.Build) void {
         .linux => {
             lib.addIncludePath("src/os/unix");
             lib.addCSourceFiles(src_os_unix, &.{});
-            for (host_apis) |s| {
-                const api = HostApi.fromString(s);
+            for (host_apis) |api| {
                 switch (api) {
                     .alsa => {
                         lib.addIncludePath("src/hostapi/alsa");
@@ -106,8 +126,7 @@ pub fn build(b: *std.Build) void {
         .windows => {
             lib.addIncludePath("src/os/win");
             lib.addCSourceFiles(src_os_win, &.{});
-            for (host_apis) |s| {
-                const api = HostApi.fromString(s);
+            for (host_apis) |api| {
                 switch (api) {
                     .asio => {
                         // lib.addIncludePath("src/hostapi/asio");
@@ -135,10 +154,7 @@ pub fn build(b: *std.Build) void {
                 }
             }
         },
-        else => {
-            std.log.err("unsupported OS: {s}", .{@tagName(t.os.tag)});
-            std.os.exit(1);
-        },
+        else => unsupportedOs(t.os.tag),
     }
 
     b.installArtifact(lib);
