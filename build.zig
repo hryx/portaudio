@@ -169,6 +169,8 @@ pub fn build(b: *std.Build) !void {
             }
             lib.addIncludePath(.{ .path = "src/os/win" });
             lib.addCSourceFiles(src_os_win, flags.items);
+            lib.linkSystemLibrary("winmm");
+            lib.linkSystemLibrary("ole32");
         },
         else => unsupportedOs(t.os.tag),
     }
