@@ -1,4 +1,15 @@
 .{
     .name = "portaudio",
     .version = "19.7.0",
+    .paths = .{
+        "LICENSE.txt",
+        "README.md",
+        "build.zig",
+        "build.zig.zon",
+        "examples",
+        "include",
+        "qa",
+        "src",
+        "test",
+    },
 }

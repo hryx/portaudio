@@ -55,7 +55,7 @@ pub fn build(b: *std.Build) !void {
     lib.addIncludePath(.{ .path = "include" });
     lib.addIncludePath(.{ .path = "src/common" });
     lib.installHeadersDirectory("include", "");
-    lib.addCSourceFiles(src_common, &.{});
+    lib.addCSourceFiles(.{ .files = src_common });
     lib.linkLibC();
 
     const t = lib.target_info.target;
@@ -90,7 +90,7 @@ pub fn build(b: *std.Build) !void {
                     .coreaudio => {
                         try flags.append("-DPA_USE_COREAUDIO=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/coreaudio" });
-                        lib.addCSourceFiles(src_hostapi_coreaudio, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_coreaudio });
                         lib.linkFramework("AudioToolbox");
                         lib.linkFramework("AudioUnit");
                         lib.linkFramework("CoreAudio");
@@ -100,7 +100,7 @@ pub fn build(b: *std.Build) !void {
                 }
             }
             lib.addIncludePath(.{ .path = "src/os/unix" });
-            lib.addCSourceFiles(src_os_unix, flags.items);
+            lib.addCSourceFiles(.{ .files = src_os_unix, .flags = flags.items });
         },
         .linux => {
             for (host_apis) |api| {
@@ -108,67 +108,67 @@ pub fn build(b: *std.Build) !void {
                     .alsa => {
                         try flags.append("-DPA_USE_ALSA=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/alsa" });
-                        lib.addCSourceFiles(src_hostapi_alsa, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_alsa });
                         lib.linkSystemLibrary("alsa");
                     },
                     .asihpi => {
                         try flags.append("-DPA_USE_ASIHPI=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/asihpi" });
-                        lib.addCSourceFiles(src_hostapi_asihpi, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_asihpi });
                         lib.linkSystemLibrary("asihpi");
                     },
                     .jack => {
                         try flags.append("-DPA_USE_JACK=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/jack" });
-                        lib.addCSourceFiles(src_hostapi_jack, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_jack });
                         lib.linkSystemLibrary("jack2");
                     },
                     .oss => {
                         try flags.append("-DPA_USE_OSS=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/oss" });
-                        lib.addCSourceFiles(src_hostapi_oss, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_oss });
                     },
                     else => unsupportedHostApi(t.os.tag, api),
                 }
             }
             lib.addIncludePath(.{ .path = "src/os/unix" });
-            lib.addCSourceFiles(src_os_unix, flags.items);
+            lib.addCSourceFiles(.{ .files = src_os_unix, .flags = flags.items });
         },
         .windows => {
             for (host_apis) |api| {
                 switch (api) {
                     .asio => {
                         // lib.addIncludePath("src/hostapi/asio");
-                        // lib.addCSourceFiles(src_hostapi_asio, &.{});
                         // try flags.append("-DPA_USE_ASIO=1");
+                        // lib.addCSourceFiles(.{ .files = src_hostapi_asio, .flags = flags.items });
                         std.log.err("TODO: ASIO on Windows", .{});
                         std.os.exit(1);
                     },
                     .dsound => {
                         try flags.append("-DPA_USE_DS=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/dsound" });
-                        lib.addCSourceFiles(src_hostapi_dsound, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_dsound });
                     },
                     .wasapi => {
                         try flags.append("-DPA_USE_WASAPI=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/wasapi" });
-                        lib.addCSourceFiles(src_hostapi_wasapi, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_wasapi });
                     },
                     .wdmks => {
                         try flags.append("-DPA_USE_WDMKS=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/wdmks" });
-                        lib.addCSourceFiles(src_hostapi_wdmks, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_wdmks });
                     },
                     .wmme => {
                         try flags.append("-DPA_USE_WMME=1");
                         lib.addIncludePath(.{ .path = "src/hostapi/wmme" });
-                        lib.addCSourceFiles(src_hostapi_wmme, &.{});
+                        lib.addCSourceFiles(.{ .files = src_hostapi_wmme });
                     },
                     else => unsupportedHostApi(t.os.tag, api),
                 }
             }
             lib.addIncludePath(.{ .path = "src/os/win" });
-            lib.addCSourceFiles(src_os_win, flags.items);
+            lib.addCSourceFiles(.{ .files = src_os_win, .flags = flags.items });
             lib.linkSystemLibrary("winmm");
             lib.linkSystemLibrary("ole32");
         },
