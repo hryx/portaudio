@@ -1,3 +1,5 @@
+Note: This repo is superseded by https://github.com/allyourcodebase/portaudio
+
 # PortAudio - portable audio I/O library
 
 PortAudio is a portable audio I/O library designed for cross-platform
