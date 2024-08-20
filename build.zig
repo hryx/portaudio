@@ -15,18 +15,6 @@ const HostApi = enum {
     const defaults_macos = [_]HostApi{.coreaudio};
     const defaults_linux = [_]HostApi{.alsa};
     const defaults_windows = [_]HostApi{.wasapi};
-
-    // TODO: remove when std.Build can parse list of enums
-    fn fromString(s: []const u8) HostApi {
-        return std.meta.stringToEnum(HostApi, s) orelse {
-            std.log.err("unknown host API '{s}'", .{s});
-            std.debug.print("available options are:\n", .{});
-            for (std.meta.fieldNames(HostApi)) |name| {
-                std.debug.print("  {s}\n", .{name});
-            }
-            std.process.exit(1);
-        };
-    }
 };
 
 fn unsupportedOs(os: std.Target.Os.Tag) noreturn {
@@ -60,24 +48,14 @@ pub fn build(b: *std.Build) !void {
 
     const t = lib.rootModuleTarget();
 
-    // TODO: std.Build cannot parse list of enums yet
-    // TODO: prevent duplicates
     const host_apis = blk: {
-        const opt_strs = b.option([]const []const u8, "host-api", "Enable specific host audio APIs");
-        if (opt_strs) |strs| {
-            const opts = b.allocator.alloc(HostApi, strs.len) catch @panic("OOM");
-            for (strs, opts) |s, *opt| {
-                opt.* = HostApi.fromString(s);
-            }
-            break :blk opts;
-        } else {
-            break :blk switch (t.os.tag) {
-                .macos => &HostApi.defaults_macos,
-                .linux => &HostApi.defaults_linux,
-                .windows => &HostApi.defaults_windows,
-                else => unsupportedOs(t.os.tag),
-            };
-        }
+        const maybe_opts = b.option([]const HostApi, "host-api", "Enable specific host audio APIs");
+        break :blk if (maybe_opts) |opts| opts else switch (t.os.tag) {
+            .macos => &HostApi.defaults_macos,
+            .linux => &HostApi.defaults_linux,
+            .windows => &HostApi.defaults_windows,
+            else => unsupportedOs(t.os.tag),
+        };
     };
 
     var flags = std.ArrayList([]const u8).init(b.allocator);
@@ -138,9 +116,10 @@ pub fn build(b: *std.Build) !void {
             for (host_apis) |api| {
                 switch (api) {
                     .asio => {
-                        // lib.addIncludePath("src/hostapi/asio");
+                        // lib.addIncludePath(b.path("src/hostapi/asio"));
                         // try flags.append("-DPA_USE_ASIO=1");
                         // lib.addCSourceFiles(.{ .files = src_hostapi_asio, .flags = flags.items });
+                        // lib.linkLibCpp();
                         std.log.err("TODO: ASIO on Windows", .{});
                         std.process.exit(1);
                     },
